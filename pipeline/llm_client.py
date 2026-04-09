@@ -9,7 +9,6 @@ import anthropic
 logger = logging.getLogger(__name__)
 
 MODEL = "claude-opus-4-6"
-EMBEDDING_MODEL = "voyage-3"
 MAX_RETRIES = 3
 
 
@@ -135,20 +134,3 @@ class LLMClient:
             response.usage.output_tokens,
         )
         return json.loads(raw)
-
-    # ------------------------------------------------------------------
-    # Embeddings
-    # ------------------------------------------------------------------
-    def embed_text(self, text: str) -> list[float]:
-        """Return a 1536-dim embedding vector for *text*."""
-        response = self.client.embeddings.create(
-            model=EMBEDDING_MODEL,
-            input=[text],
-        )
-        embedding = response.data[0].embedding
-        logger.debug(
-            "embed_text  model=%s  input_tokens=%s",
-            EMBEDDING_MODEL,
-            response.usage.total_tokens,
-        )
-        return embedding

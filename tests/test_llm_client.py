@@ -30,13 +30,6 @@ def _make_message(text, model=MODEL, input_tokens=10, output_tokens=20):
     )
 
 
-def _make_embedding(vector, total_tokens=5):
-    return SimpleNamespace(
-        data=[SimpleNamespace(embedding=vector)],
-        usage=SimpleNamespace(total_tokens=total_tokens),
-    )
-
-
 @pytest.fixture()
 def client():
     with patch("pipeline.llm_client.anthropic.Anthropic"):
@@ -149,23 +142,3 @@ class TestClassifyHsCode:
         )
         client.classify_hs_code("x", [])
         assert client.client.messages.create.call_args.kwargs["model"] == MODEL
-
-
-# ---------------------------------------------------------------------------
-# embed_text
-# ---------------------------------------------------------------------------
-
-class TestEmbedText:
-
-    def test_returns_vector(self, client):
-        vec = [0.1] * 1536
-        client.client.embeddings.create.return_value = _make_embedding(vec)
-        result = client.embed_text("hello world")
-        assert result == vec
-        assert len(result) == 1536
-
-    def test_passes_input_as_list(self, client):
-        client.client.embeddings.create.return_value = _make_embedding([0.0])
-        client.embed_text("test")
-        call_kwargs = client.client.embeddings.create.call_args.kwargs
-        assert call_kwargs["input"] == ["test"]

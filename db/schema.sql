@@ -1,10 +1,4 @@
 -- ══════════════════════════════════════════════
--- EXTENSIONS
--- pgvector: uncomment the line below once pgvector is installed.
--- ══════════════════════════════════════════════
--- CREATE EXTENSION IF NOT EXISTS vector;
-
--- ══════════════════════════════════════════════
 -- KB: ECONOMIC BLOCKS
 -- EU, ASEAN, GCC, etc. Countries inherit from blocks.
 -- ══════════════════════════════════════════════
@@ -73,10 +67,7 @@ CREATE TABLE kb_country_profiles (
     profile_version                 INTEGER DEFAULT 1,
     profile_status                  TEXT DEFAULT 'draft',  -- 'draft', 'published', 'archived'
     created_at                      TIMESTAMPTZ DEFAULT NOW(),
-    updated_at                      TIMESTAMPTZ DEFAULT NOW(),
-
-    -- Semantic search over all rich text fields combined
-    profile_embedding               BYTEA
+    updated_at                      TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ══════════════════════════════════════════════
@@ -215,7 +206,6 @@ CREATE TABLE kb_hs_codes (
     country_scope TEXT,            -- 'EU', 'US', 'WCO'
     valid_from    DATE,
     valid_to      DATE,
-    embedding     BYTEA,
     UNIQUE(code, code_type)
 );
 
@@ -272,7 +262,6 @@ CREATE TABLE regulations (
     full_text      TEXT,
     summary        TEXT,           -- LLM-generated
     status         TEXT DEFAULT 'active',  -- 'active', 'superseded', 'draft'
-    embedding      BYTEA,
     created_at     TIMESTAMPTZ DEFAULT NOW(),
     updated_at     TIMESTAMPTZ DEFAULT NOW()
 );
@@ -327,17 +316,12 @@ CREATE TABLE pipeline_runs (
 -- KB
 CREATE INDEX ON kb_country_profiles (iso2);
 CREATE INDEX ON kb_country_profiles (block_id);
--- Vector indexes: uncomment once pgvector is installed.
--- CREATE INDEX ON kb_country_profiles USING hnsw (profile_embedding vector_cosine_ops);
 CREATE INDEX ON kb_memberships (country_id, org_code);
 CREATE INDEX ON kb_memberships (org_code, is_member);
 CREATE INDEX ON kb_standards_acceptance (country_id, standard_code);
 CREATE INDEX ON kb_standards_acceptance (standard_code, accepted);
 CREATE INDEX ON kb_verification_queue (status, country_id);
--- CREATE INDEX ON kb_hs_codes USING hnsw (embedding vector_cosine_ops);
-
 -- Pipeline
--- CREATE INDEX ON regulations USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX ON regulations (country, status);
 CREATE INDEX ON regulations (effective_date);
 CREATE INDEX ON regulations USING GIN (to_tsvector('english', title || ' ' || COALESCE(full_text, '')));
