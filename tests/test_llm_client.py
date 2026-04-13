@@ -67,10 +67,10 @@ class TestCall:
         assert result == "world"
 
     @patch("pipeline.llm_client.httpx.post")
-    def test_uses_120s_timeout(self, mock_post, client):
+    def test_uses_240s_timeout(self, mock_post, client):
         mock_post.return_value = _ollama_response("ok")
         client._call([{"role": "user", "content": "hi"}])
-        assert mock_post.call_args.kwargs["timeout"] == 120
+        assert mock_post.call_args.kwargs["timeout"] == 240
 
 
 # ---------------------------------------------------------------------------
@@ -197,7 +197,7 @@ class TestHealthCheck:
 
     @patch("pipeline.llm_client.httpx.get")
     def test_returns_true_when_model_found(self, mock_get, client):
-        mock_get.return_value = _tags_response(["gemma4:e4b", "llama3:8b"])
+        mock_get.return_value = _tags_response(["gemma4:e2b", "llama3:8b"])
         assert client.health_check() is True
 
     @patch("pipeline.llm_client.httpx.get")
@@ -212,5 +212,5 @@ class TestHealthCheck:
 
     @patch("pipeline.llm_client.httpx.get")
     def test_returns_true_for_partial_name_match(self, mock_get, client):
-        mock_get.return_value = _tags_response(["gemma4:e4b-latest"])
+        mock_get.return_value = _tags_response(["gemma4:e2b-latest"])
         assert client.health_check() is True

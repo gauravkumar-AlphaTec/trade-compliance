@@ -1,6 +1,7 @@
 """Centralised LLM client — all inference calls go through this module.
 
-Uses Ollama (local) with gemma4:e4b for all LLM work.
+Uses Ollama (local) with gemma4:e2b for all LLM work
+(smaller variant chosen for hardware-limited deployments).
 """
 
 import json
@@ -11,9 +12,47 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gemma4:e4b"
+MODEL = "gemma4:e2b"
 MAX_RETRIES = 3
-TIMEOUT = 120
+TIMEOUT = 240
+
+
+def _extract_json(raw: str) -> dict:
+    """Parse JSON from LLM output, tolerating markdown fences and preamble.
+
+    Smaller models (e.g. gemma4:e2b) often wrap JSON in ```json ... ``` fences
+    or add a sentence before/after. Strip wrappers and parse the first
+    balanced {...} object found.
+    """
+    text = raw.strip()
+
+    # Strip ```json ... ``` or ``` ... ``` fences
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.rstrip().endswith("```"):
+            text = text.rstrip()[:-3]
+        text = text.strip()
+
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Find the first balanced {...} object
+    depth = 0
+    start = -1
+    for i, ch in enumerate(text):
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start >= 0:
+                return json.loads(text[start:i + 1])
+
+    raise json.JSONDecodeError("No JSON object found in LLM output", text, 0)
 
 
 class LLMClient:
@@ -76,7 +115,7 @@ class LLMClient:
         for attempt in range(1, MAX_RETRIES + 1):
             raw = self._call(messages)
             try:
-                return json.loads(raw)
+                return _extract_json(raw)
             except json.JSONDecodeError as exc:
                 last_error = exc
                 logger.debug(
@@ -140,7 +179,7 @@ class LLMClient:
             },
         ]
         raw = self._call(messages)
-        result = json.loads(raw)
+        result = _extract_json(raw)
         result["confidence"] = round(result["confidence"] * 0.85, 3)
         return result
 
@@ -148,7 +187,7 @@ class LLMClient:
     # Health check
     # ------------------------------------------------------------------
     def health_check(self) -> bool:
-        """Check that Ollama is running and gemma4:e4b is available.
+        """Check that Ollama is running and the configured model is available.
 
         Returns True if the model is found, False otherwise.
         """

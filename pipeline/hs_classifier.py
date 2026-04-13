@@ -90,6 +90,14 @@ def lookup_mapping(
     if row is None:
         return None
 
+    if isinstance(row, dict):
+        return {
+            "code": row["hs_code"],
+            "code_type": row["code_type"],
+            "confidence": row["confidence"],
+            "reasoning": row["reasoning"],
+            "national_variant": row["national_variant"],
+        }
     return {
         "code": row[0],
         "code_type": row[1],
@@ -136,7 +144,11 @@ def get_candidates_by_keyword(
         cur.close()
 
     return [
-        {"code": r[0], "code_type": r[1], "description": r[2]}
+        {
+            "code": r["code"] if isinstance(r, dict) else r[0],
+            "code_type": r["code_type"] if isinstance(r, dict) else r[1],
+            "description": r["description"] if isinstance(r, dict) else r[2],
+        }
         for r in rows
     ]
 
