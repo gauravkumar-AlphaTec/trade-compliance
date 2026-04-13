@@ -10,7 +10,7 @@ Given a destination country and product type, returns all relevant regulations, 
 
 ## Stack
 
-Python 3.11 · PostgreSQL 16 + pgvector · Prefect · FastAPI · Anthropic Claude
+Python 3.11 · PostgreSQL 16 · Prefect · FastAPI · Anthropic Claude
 
 ## Quick start
 
