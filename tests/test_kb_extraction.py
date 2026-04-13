@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 
 from kb.extract_profile import (
     extract_qib,

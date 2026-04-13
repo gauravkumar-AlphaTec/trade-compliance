@@ -98,6 +98,37 @@ class TestRouteField:
     def test_non_free_text_field_uses_thresholds(self):
         assert route_field("iso2", "DE", 0.95) == "auto_accept"
 
+    def test_generic_product_categories_forced_hold(self):
+        assert route_field("product_categories", ["machinery"], 0.95) == "hold"
+
+    def test_generic_categories_case_insensitive(self):
+        assert route_field("product_categories", ["Equipment"], 0.95) == "hold"
+
+    def test_generic_categories_whitespace_trimmed(self):
+        assert route_field("product_categories", ["  devices  "], 0.90) == "hold"
+
+    def test_multiple_generic_categories_hold(self):
+        assert route_field("product_categories", ["goods", "articles"], 0.95) == "hold"
+
+    def test_specific_categories_use_normal_thresholds(self):
+        assert route_field("product_categories", ["centrifugal pumps"], 0.95) == "auto_accept"
+
+    def test_mixed_categories_use_normal_thresholds(self):
+        assert route_field("product_categories", ["machinery", "centrifugal pumps"], 0.95) == "auto_accept"
+
+    def test_empty_categories_use_normal_thresholds(self):
+        assert route_field("product_categories", [], 0.95) == "auto_accept"
+
+    def test_all_generic_terms_trigger_hold(self):
+        for term in [
+            "pressure equipment", "assemblies", "machinery", "equipment",
+            "products", "goods", "articles", "devices",
+        ]:
+            assert route_field("product_categories", [term], 0.99) == "hold", f"Failed for: {term}"
+
+    def test_other_field_with_list_not_affected(self):
+        assert route_field("tags", ["machinery"], 0.95) == "auto_accept"
+
 
 class TestQueueItem:
 

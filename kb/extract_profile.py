@@ -1,6 +1,6 @@
 """LLM-driven extraction functions for KB country profiles.
 
-All functions accept an LLMClient instance — never import anthropic directly.
+All functions accept an LLMClient instance — never call Ollama directly.
 Every field carries source_url, confidence, and last_verified_at per KB rules.
 """
 

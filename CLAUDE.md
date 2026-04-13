@@ -8,31 +8,33 @@ regulations, required standards, HS codes, and practical compliance requirements
 
 ## Stack
 - Python 3.11
-- PostgreSQL 16 + pgvector
+- PostgreSQL 16
 - Prefect (self-hosted orchestration)
 - FastAPI (internal query API)
 - Docker Compose
-- Anthropic API: claude-opus-4-6 for all LLM work
+- Ollama (local inference): gemma4:e4b for all LLM work
+- No external API calls in pipeline. Fully self-hosted.
 
 ## Non-negotiable rules
-1. Never hardcode API keys. Always read from environment variables.
-2. All LLM calls go through pipeline/llm_client.py — never call anthropic directly elsewhere.
+1. Never hardcode host URLs. Always read from environment variables.
+2. All LLM calls go through pipeline/llm_client.py — never call Ollama directly elsewhere.
 3. Every pipeline function and every KB function must have a unit test.
 4. All DB writes use parameterised queries. No f-string SQL, ever.
 5. Schema changes after v1: add a migration file to db/migrations/. Never edit schema.sql directly.
 6. KB and pipeline share the same database. Tables are prefixed: kb_ for KB tables.
 
 ## Environment variables required
-- ANTHROPIC_API_KEY
+- OLLAMA_HOST=http://ollama:11434
 - DATABASE_URL=postgresql://user:pass@localhost:5432/trade_compliance
 - PREFECT_API_URL=http://localhost:4200/api
 
 ## Running locally (no Docker)
-- PostgreSQL 16 with pgvector extension must be installed locally.
+- PostgreSQL 16 must be installed locally.
 - Start postgres: pg_ctl start (or your OS service manager).
-- Install pgvector: see https://github.com/pgvector/pgvector#installation
 - Create the database: createdb trade_compliance
 - Init schema: python -m db.init
+- Start Ollama: ollama serve (default port 11434)
+- Pull model: ollama pull gemma4:e4b
 - Start Prefect server: prefect server start  (UI at http://localhost:4200)
 - Start API: uvicorn api.main:app --reload    (http://localhost:8000)
 - Start pipeline worker: prefect worker start --pool default-agent-pool
@@ -53,9 +55,10 @@ regulations, required standards, HS codes, and practical compliance requirements
 ## HS code classification
 Classifier in pipeline/hs_classifier.py uses RAG:
 1. Embed product description
-2. pgvector cosine search against kb_hs_codes filtered by country scope
-3. Top-10 candidates + description → Opus → {code, confidence, reasoning}
+2. PostgreSQL full-text search against kb_hs_codes filtered by country scope
+3. Top-10 candidates + description → gemma4:e4b → {code, confidence, reasoning}
 4. confidence < 0.75 → flagged to validation_queue, not rejected
+5. classify_hs_code() multiplies raw confidence by 0.85 to account for local model accuracy
 
 ## Review CLI
 pipeline/review_cli.py handles both validation_queue (pipeline) and

@@ -38,6 +38,18 @@ FREE_TEXT_FIELDS = frozenset({
     "reviewer_note",
 })
 
+# Generic umbrella terms — must match pipeline.validate.GENERIC_CATEGORIES
+GENERIC_CATEGORIES = frozenset({
+    "pressure equipment",
+    "assemblies",
+    "machinery",
+    "equipment",
+    "products",
+    "goods",
+    "articles",
+    "devices",
+})
+
 
 def calculate_confidence(
     raw_confidence: float,
@@ -87,6 +99,15 @@ def route_field(field_name: str, value, confidence: float) -> str:
     """
     if field_name in FREE_TEXT_FIELDS:
         return "spot_check"
+
+    # Shallow product categories → force hold
+    if field_name == "product_categories" and isinstance(value, list):
+        if all(
+            item.strip().lower() in GENERIC_CATEGORIES
+            for item in value
+            if isinstance(item, str)
+        ) and len(value) > 0:
+            return "hold"
 
     if confidence >= 0.90:
         return "auto_accept"
