@@ -143,6 +143,84 @@ def _check_duplicate(record: dict, issues: list[dict]) -> None:
 
 
 # ------------------------------------------------------------------
+# quarantine
+# ------------------------------------------------------------------
+
+def quarantine(record: dict, issues: list[str], db_conn) -> None:
+    """Insert each issue into the validation_queue table.
+
+    Parameters
+    ----------
+    record : dict
+        The regulation record that failed validation.
+    issues : list[str]
+        Human-readable issue descriptions.
+    db_conn :
+        Database connection.
+    """
+    cur = db_conn.cursor()
+    try:
+        for issue_text in issues:
+            # Parse issue_type from the text if it follows "type: detail" pattern
+            if ": " in issue_text:
+                issue_type, issue_detail = issue_text.split(": ", 1)
+            else:
+                issue_type = "validation_failure"
+                issue_detail = issue_text
+
+            cur.execute(
+                """
+                INSERT INTO validation_queue
+                    (record_type, issue_type, issue_detail, status)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    "regulation",
+                    issue_type,
+                    issue_detail,
+                    "pending",
+                ),
+            )
+        db_conn.commit()
+    except Exception:
+        db_conn.rollback()
+        raise
+    finally:
+        cur.close()
+
+
+# ------------------------------------------------------------------
+# validate_and_route
+# ------------------------------------------------------------------
+
+def validate_and_route(record: dict, db_conn, source: dict | None = None) -> str:
+    """Validate a regulation record and route it.
+
+    Returns
+    -------
+    str
+        'pass' — record is valid, proceed to load.
+        'quarantine' — record has issues, inserted into validation_queue.
+        'duplicate' — record is a duplicate (_skip flag set by clean stage).
+    """
+    # Check for duplicate (set by pipeline/process.py clean stage)
+    if record.get("_skip"):
+        return "duplicate"
+
+    result = validate_regulation(record, source)
+
+    if result["status"] == "quarantine":
+        issues = [
+            f"{i['issue_type']}: {i['issue_detail']}"
+            for i in result["issues"]
+        ]
+        quarantine(record, issues, db_conn)
+        return "quarantine"
+
+    return "pass"
+
+
+# ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
 
