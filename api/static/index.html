@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trade Compliance — Demo</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-hover: #0ea5e9;
+    --good: #4ade80;
+    --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0; padding: 24px;
+    background: var(--bg); color: var(--text);
+    line-height: 1.5;
+  }
+  h1 { margin: 0 0 8px; font-weight: 600; }
+  .subtitle { color: var(--muted); margin-bottom: 32px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 18px; }
+  .card .desc { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  input, select {
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 8px 10px; font-size: 14px; width: 100%;
+    font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .row { display: flex; gap: 12px; align-items: end; margin-bottom: 12px; }
+  .row > * { flex: 1; }
+  .row > button { flex: 0 0 auto; }
+  button {
+    background: var(--accent); color: var(--bg); border: 0;
+    padding: 8px 16px; border-radius: 4px; font-weight: 600;
+    cursor: pointer; font-size: 14px;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  pre {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px; overflow-x: auto;
+    font-size: 12px; max-height: 400px; overflow-y: auto;
+    margin: 0;
+  }
+  .result-summary {
+    margin-bottom: 12px; padding: 8px 12px;
+    background: rgba(56, 189, 248, 0.1); border-left: 3px solid var(--accent);
+    border-radius: 4px; font-size: 13px;
+  }
+  .result-summary.error {
+    background: rgba(248, 113, 113, 0.1); border-color: var(--bad);
+  }
+  .result-summary strong { color: var(--accent); }
+  .result-summary.error strong { color: var(--bad); }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    background: var(--border); font-size: 11px; margin-right: 4px;
+  }
+  .pill.good { background: rgba(74, 222, 128, 0.2); color: var(--good); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px;
+  }
+  .health-pill {
+    padding: 4px 10px; border-radius: 12px; font-size: 12px;
+    background: rgba(74, 222, 128, 0.2); color: var(--good);
+  }
+  .health-pill.down { background: rgba(248, 113, 113, 0.2); color: var(--bad); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Trade Compliance Demo</h1>
+    <div class="subtitle">Country + product → HS code + regulations</div>
+  </div>
+  <div id="health" class="health-pill">checking…</div>
+</header>
+
+<!-- Act 1 — Country -->
+<div class="card">
+  <h2>1. Country profile</h2>
+  <div class="desc">Get full regulatory infrastructure for a country.</div>
+  <div class="row">
+    <div>
+      <label>ISO2 code</label>
+      <input id="country-iso2" value="DE">
+    </div>
+    <button onclick="getCountry()">Fetch</button>
+  </div>
+  <div id="country-summary"></div>
+  <pre id="country-out">Click Fetch to load…</pre>
+</div>
+
+<!-- Act 2 — Regulations -->
+<div class="card">
+  <h2>2. Regulations</h2>
+  <div class="desc">List regulations for a country (filter by document type).</div>
+  <div class="row">
+    <div>
+      <label>Country</label>
+      <input id="reg-country" value="DE">
+    </div>
+    <div>
+      <label>Document type (optional)</label>
+      <select id="reg-type">
+        <option value="">— any —</option>
+        <option value="directive">directive</option>
+        <option value="regulation">regulation</option>
+      </select>
+    </div>
+    <button onclick="getRegulations()">Fetch</button>
+  </div>
+  <div id="reg-summary"></div>
+  <pre id="reg-out">Click Fetch to load…</pre>
+</div>
+
+<!-- Act 3 + 4 — Search + Compliance -->
+<div class="grid-2">
+  <div class="card">
+    <h2>3. HS code search</h2>
+    <div class="desc">Lookup tier (instant) → GIN+LLM tier (slow).</div>
+    <div class="row">
+      <div>
+        <label>Product description</label>
+        <input id="hs-product" value="centrifugal pumps" list="examples">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>HS scope</label>
+        <select id="hs-scope">
+          <option value="EU_CN_8">EU_CN_8</option>
+          <option value="WCO_6">WCO_6</option>
+        </select>
+      </div>
+      <button onclick="searchHs()">Classify</button>
+    </div>
+    <datalist id="examples">
+      <option value="centrifugal pumps"></option>
+      <option value="electric motors"></option>
+      <option value="industrial robots"></option>
+      <option value="CNC milling machines"></option>
+      <option value="hot-water boilers"></option>
+      <option value="bicycle"></option>
+    </datalist>
+    <div id="hs-summary"></div>
+    <pre id="hs-out">Click Classify to load…</pre>
+  </div>
+
+  <div class="card">
+    <h2>4. Compliance check</h2>
+    <div class="desc">Headline call: country + product → HS + matching regulations.</div>
+    <div class="row">
+      <div>
+        <label>Product description</label>
+        <input id="comp-product" value="centrifugal pumps">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Country</label>
+        <input id="comp-country" value="DE">
+      </div>
+      <button onclick="complianceCheck()">Check</button>
+    </div>
+    <div id="comp-summary"></div>
+    <pre id="comp-out">Click Check to load…</pre>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+async function fetchJson(url, opts = {}) {
+  const r = await fetch(url, opts);
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { _raw: text }; }
+  return { ok: r.ok, status: r.status, data };
+}
+
+function showResult(summaryEl, outEl, summary, data, isError) {
+  summaryEl.innerHTML = `<div class="result-summary${isError ? ' error' : ''}">${summary}</div>`;
+  outEl.textContent = JSON.stringify(data, null, 2);
+}
+
+async function checkHealth() {
+  const el = document.getElementById('health');
+  try {
+    const { ok, data } = await fetchJson(`${API}/health`);
+    if (ok) {
+      el.textContent = `API ${data.version} ✓`;
+      el.classList.remove('down');
+    } else {
+      el.textContent = 'API down';
+      el.classList.add('down');
+    }
+  } catch {
+    el.textContent = 'API unreachable';
+    el.classList.add('down');
+  }
+}
+
+async function getCountry() {
+  const iso2 = document.getElementById('country-iso2').value.trim().toUpperCase();
+  const summaryEl = document.getElementById('country-summary');
+  const outEl = document.getElementById('country-out');
+  outEl.textContent = 'Loading…';
+  const { ok, data } = await fetchJson(`${API}/countries/${iso2}`);
+  if (!ok) {
+    showResult(summaryEl, outEl, `<strong>Error ${data.detail || 'failed'}</strong>`, data, true);
+    return;
+  }
+  const memberPills = (data.memberships || [])
+    .map(m => `<span class="pill good">${m.org_code}</span>`).join('');
+  showResult(summaryEl, outEl,
+    `<strong>${data.country_name}</strong> (${data.iso2}, ${data.iso3}) — block: ${data.block_code || 'none'} · ${(data.memberships || []).length} memberships<br>${memberPills}`,
+    data, false);
+}
+
+async function getRegulations() {
+  const country = document.getElementById('reg-country').value.trim().toUpperCase();
+  const type = document.getElementById('reg-type').value;
+  const summaryEl = document.getElementById('reg-summary');
+  const outEl = document.getElementById('reg-out');
+  outEl.textContent = 'Loading…';
+  let url = `${API}/regulations?country=${country}`;
+  if (type) url += `&document_type=${type}`;
+  const { ok, data } = await fetchJson(url);
+  if (!ok) {
+    showResult(summaryEl, outEl, `<strong>Error</strong>`, data, true);
+    return;
+  }
+  showResult(summaryEl, outEl,
+    `<strong>${data.total}</strong> regulations for ${country}${type ? ' · type=' + type : ''}`,
+    data, false);
+}
+
+async function searchHs() {
+  const product = document.getElementById('hs-product').value.trim();
+  const scope = document.getElementById('hs-scope').value;
+  const summaryEl = document.getElementById('hs-summary');
+  const outEl = document.getElementById('hs-out');
+  outEl.textContent = 'Classifying… (LLM fallback may take 30+s)';
+  const t0 = performance.now();
+  const { ok, data } = await fetchJson(`${API}/hs-codes/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product_description: product, country_scope: scope }),
+  });
+  const ms = Math.round(performance.now() - t0);
+  if (!ok) {
+    showResult(summaryEl, outEl, `<strong>Error</strong> (${ms}ms)`, data, true);
+    return;
+  }
+  const c = data.classification || {};
+  const tier = ms < 500 ? 'lookup tier' : 'LLM tier';
+  showResult(summaryEl, outEl,
+    `<strong>${c.code || '—'}</strong> (${c.code_type || ''}) · confidence ${c.confidence ?? '—'} · ${tier} · ${ms}ms`,
+    data, false);
+}
+
+async function complianceCheck() {
+  const product = document.getElementById('comp-product').value.trim();
+  const country = document.getElementById('comp-country').value.trim().toUpperCase();
+  const summaryEl = document.getElementById('comp-summary');
+  const outEl = document.getElementById('comp-out');
+  outEl.textContent = 'Checking…';
+  const t0 = performance.now();
+  const { ok, data } = await fetchJson(`${API}/hs-codes/compliance-check`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product_description: product, country_code: country }),
+  });
+  const ms = Math.round(performance.now() - t0);
+  if (!ok) {
+    showResult(summaryEl, outEl, `<strong>Error</strong> (${ms}ms)`, data, true);
+    return;
+  }
+  const hs = data.hs_classification || {};
+  const regs = data.regulations || [];
+  const regsHtml = regs.map(r => `<span class="pill">${(r.title || '').split('—')[0].trim()}</span>`).join('');
+  showResult(summaryEl, outEl,
+    `<strong>${hs.code || '—'}</strong> → ${regs.length} regulation(s) · ${ms}ms<br>${regsHtml}`,
+    data, false);
+}
+
+checkHealth();
+</script>
+</body>
+</html>

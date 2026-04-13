@@ -186,12 +186,13 @@ def compliance_check(
         if hs_code_value:
             cur.execute(
                 """
-                SELECT r.id, r.title, r.document_type, r.authority,
+                SELECT DISTINCT r.id, r.title, r.document_type, r.authority,
                        r.country, r.effective_date, r.status
                 FROM regulations r
                 JOIN regulation_hs_codes rhc ON r.id = rhc.regulation_id
                 JOIN kb_hs_codes hc ON rhc.hs_code_id = hc.id
-                WHERE r.country = %s AND hc.code = %s
+                WHERE r.country = %s
+                  AND hc.code = LEFT(%s, LENGTH(hc.code))
                 ORDER BY r.effective_date DESC NULLS LAST
                 LIMIT 20
                 """,
@@ -214,10 +215,12 @@ def compliance_check(
         # 4. Standards
         cur.execute(
             """
-            SELECT DISTINCT standard_name
-            FROM kb_standards
-            WHERE country_code = %s OR country_code = 'INT'
-            ORDER BY standard_name
+            SELECT DISTINCT sa.standard_name
+            FROM kb_standards_acceptance sa
+            JOIN kb_country_profiles cp ON sa.country_id = cp.id
+            WHERE cp.iso2 = %s
+              AND sa.standard_name IS NOT NULL
+            ORDER BY sa.standard_name
             LIMIT 50
             """,
             (country_code,),
