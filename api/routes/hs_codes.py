@@ -10,6 +10,7 @@ from api.models import (
     ComplianceCheckRequest,
     ComplianceCheckResponse,
     CountryContext,
+    HarmonisedStandardSummary,
     NotifiedBodySummary,
     RegulationSummary,
 )
@@ -251,6 +252,21 @@ def compliance_check(
             )
             notified_body_rows = cur.fetchall()
 
+        # 6. Harmonised standards in force for the directives in scope
+        harmonised_rows = []
+        if directive_refs:
+            cur.execute(
+                """
+                SELECT standard_code, title, eso, directive_ref, in_force_from
+                FROM kb_harmonised_standards
+                WHERE directive_ref = ANY(%s)
+                  AND withdrawn_on IS NULL
+                ORDER BY directive_ref, standard_code
+                """,
+                (directive_refs,),
+            )
+            harmonised_rows = cur.fetchall()
+
     finally:
         cur.close()
 
@@ -260,6 +276,7 @@ def compliance_check(
         for r in reg_rows
     ]
     notified_bodies = [NotifiedBodySummary(**r) for r in notified_body_rows]
+    harmonised_standards = [HarmonisedStandardSummary(**r) for r in harmonised_rows]
 
     return ComplianceCheckResponse(
         country_context=country_ctx,
@@ -267,4 +284,5 @@ def compliance_check(
         regulations=regulations,
         standards=standards,
         notified_bodies=notified_bodies,
+        harmonised_standards=harmonised_standards,
     )

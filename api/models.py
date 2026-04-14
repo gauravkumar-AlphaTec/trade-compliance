@@ -114,6 +114,14 @@ class ComplianceCheckRequest(BaseModel):
     product_description: str
 
 
+class HarmonisedStandardSummary(BaseModel):
+    standard_code: str
+    title: str | None = None
+    eso: str | None = None
+    directive_ref: str
+    in_force_from: date | None = None
+
+
 class NotifiedBodySummary(BaseModel):
     nb_number: str
     name: str
@@ -131,3 +139,4 @@ class ComplianceCheckResponse(BaseModel):
     regulations: list[RegulationSummary] = Field(default_factory=list)
     standards: list[str] = Field(default_factory=list)
     notified_bodies: list[NotifiedBodySummary] = Field(default_factory=list)
+    harmonised_standards: list[HarmonisedStandardSummary] = Field(default_factory=list)
