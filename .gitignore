@@ -9,3 +9,5 @@ build/
 .idea/
 .vscode/
 *.db
+.claude/
+data/

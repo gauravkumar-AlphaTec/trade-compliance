@@ -10,6 +10,7 @@ from api.models import (
     ComplianceCheckRequest,
     ComplianceCheckResponse,
     CountryContext,
+    NotifiedBodySummary,
     RegulationSummary,
 )
 from pipeline.hs_classifier import (
@@ -187,7 +188,7 @@ def compliance_check(
             cur.execute(
                 """
                 SELECT DISTINCT r.id, r.title, r.document_type, r.authority,
-                       r.country, r.effective_date, r.status
+                       r.country, r.effective_date, r.status, r.directive_ref
                 FROM regulations r
                 JOIN regulation_hs_codes rhc ON r.id = rhc.regulation_id
                 JOIN kb_hs_codes hc ON rhc.hs_code_id = hc.id
@@ -202,7 +203,7 @@ def compliance_check(
             cur.execute(
                 """
                 SELECT r.id, r.title, r.document_type, r.authority,
-                       r.country, r.effective_date, r.status
+                       r.country, r.effective_date, r.status, r.directive_ref
                 FROM regulations r
                 WHERE r.country = %s
                 ORDER BY r.effective_date DESC NULLS LAST
@@ -227,14 +228,43 @@ def compliance_check(
         )
         standards = [r["standard_name"] for r in cur.fetchall()]
 
+        # 5. Notified bodies for the directives in scope
+        directive_refs = sorted({
+            r["directive_ref"] for r in reg_rows if r.get("directive_ref")
+        })
+        notified_body_rows = []
+        if directive_refs:
+            cur.execute(
+                """
+                SELECT nb.nb_number, nb.name, nb.city, nb.email, nb.website,
+                       nbd.directive_ref, nbd.notifying_authority,
+                       nbd.last_approval_date
+                FROM kb_notified_body_directives nbd
+                JOIN kb_notified_bodies nb ON nbd.nb_id = nb.id
+                JOIN kb_country_profiles cp ON nb.country_id = cp.id
+                WHERE cp.iso2 = %s
+                  AND nbd.directive_ref = ANY(%s)
+                  AND nb.status = 'active'
+                ORDER BY nbd.directive_ref, nb.nb_number
+                """,
+                (country_code, directive_refs),
+            )
+            notified_body_rows = cur.fetchall()
+
     finally:
         cur.close()
 
-    regulations = [RegulationSummary(**r) for r in reg_rows]
+    # Strip directive_ref out before constructing RegulationSummary (not in schema).
+    regulations = [
+        RegulationSummary(**{k: v for k, v in r.items() if k != "directive_ref"})
+        for r in reg_rows
+    ]
+    notified_bodies = [NotifiedBodySummary(**r) for r in notified_body_rows]
 
     return ComplianceCheckResponse(
         country_context=country_ctx,
         hs_classification=hs_classification,
         regulations=regulations,
         standards=standards,
+        notified_bodies=notified_bodies,
     )

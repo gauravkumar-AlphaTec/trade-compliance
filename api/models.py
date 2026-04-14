@@ -114,8 +114,20 @@ class ComplianceCheckRequest(BaseModel):
     product_description: str
 
 
+class NotifiedBodySummary(BaseModel):
+    nb_number: str
+    name: str
+    city: str | None = None
+    email: str | None = None
+    website: str | None = None
+    directive_ref: str
+    notifying_authority: str | None = None
+    last_approval_date: date | None = None
+
+
 class ComplianceCheckResponse(BaseModel):
     country_context: CountryContext
     hs_classification: HsCodeResult | None = None
     regulations: list[RegulationSummary] = Field(default_factory=list)
     standards: list[str] = Field(default_factory=list)
+    notified_bodies: list[NotifiedBodySummary] = Field(default_factory=list)
