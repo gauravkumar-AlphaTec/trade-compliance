@@ -115,8 +115,17 @@ def parse_xlsx(path: Path) -> list[dict]:
     fallback_directive = directive_from_filename(path.name)
     records: list[dict] = []
 
+    eso_col = next((h for h in headers if h.startswith("ESO")), None)
+    ref_num_col = next((h for h in headers if _REF_NUMBER_SEP in h), None)
+    title_col = next((h for h in headers if h.startswith("Title of the standard")), None)
+    in_force_col_b = next((h for h in headers if "start of presumption of conformity" in h), None)
+    withdrawn_col_b = next((h for h in headers if "Date of withdrawal from OJ" in h), None)
+    oj_pub_col_b = next((h for h in headers if "publication in OJ" in h), None)
+    oj_wd_col_b = next((h for h in headers if "withdrawal from OJ (7)" in h), None)
+    combined_col = next((h for h in headers if _REF_TITLE_COMBINED in h), None)
+
     for _, row in body.iterrows():
-        eso = _clean_str(row.get([h for h in headers if h.startswith("ESO")][0]))
+        eso = _clean_str(row.get(eso_col)) if eso_col else None
         directive_cell = _clean_str(row.get(headers[0]))
         # 'Legislation' values: '2006/42/EC - Machinery (MD)' (schema A) or '2014/35/EU' (schema B).
         directive_ref = None
@@ -127,19 +136,18 @@ def parse_xlsx(path: Path) -> list[dict]:
         directive_ref = directive_ref or fallback_directive
 
         if schema == "A":
-            combined_col = next(h for h in headers if _REF_TITLE_COMBINED in h)
-            code, title = _split_combined_ref_title(_clean_str(row.get(combined_col)) or "")
+            code, title = _split_combined_ref_title(_clean_str(row.get(combined_col)) or "") if combined_col else (None, None)
             in_force_from = _to_date(row.get("Start of legal effect"))
             withdrawn_on = _to_date(row.get("End of legal effect"))
             oj_pub = _clean_str(row.get("Publication OJ reference"))
             oj_wd = _clean_str(row.get("Withdrawal OJ reference"))
         else:
-            code = _clean_str(row.get(next(h for h in headers if _REF_NUMBER_SEP in h)))
-            title = _clean_str(row.get(next(h for h in headers if h.startswith("Title of the standard"))))
-            in_force_from = _to_date(row.get(next(h for h in headers if "start of presumption of conformity (1)" in h)))
-            withdrawn_on = _to_date(row.get(next(h for h in headers if "Date of withdrawal from OJ" in h)))
-            oj_pub = _clean_str(row.get(next(h for h in headers if "publication in OJ (2)" in h)))
-            oj_wd = _clean_str(row.get(next(h for h in headers if "withdrawal from OJ (7)" in h)))
+            code = _clean_str(row.get(ref_num_col)) if ref_num_col else None
+            title = _clean_str(row.get(title_col)) if title_col else None
+            in_force_from = _to_date(row.get(in_force_col_b)) if in_force_col_b else None
+            withdrawn_on = _to_date(row.get(withdrawn_col_b)) if withdrawn_col_b else None
+            oj_pub = _clean_str(row.get(oj_pub_col_b)) if oj_pub_col_b else None
+            oj_wd = _clean_str(row.get(oj_wd_col_b)) if oj_wd_col_b else None
 
         if not code or not directive_ref:
             continue
