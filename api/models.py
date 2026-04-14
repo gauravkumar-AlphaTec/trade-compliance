@@ -114,6 +114,23 @@ class ComplianceCheckRequest(BaseModel):
     product_description: str
 
 
+class CandidatesRequest(BaseModel):
+    country_code: str
+    product_description: str
+    limit: int = 10
+
+
+class CandidatesResponse(BaseModel):
+    country_code: str
+    country_scope: str
+    candidates: list[HsCodeResult] = Field(default_factory=list)
+
+
+class ComplianceByCodeRequest(BaseModel):
+    country_code: str
+    hs_code: str
+
+
 class HarmonisedStandardSummary(BaseModel):
     standard_code: str
     title: str | None = None

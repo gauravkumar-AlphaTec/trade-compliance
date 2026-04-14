@@ -113,14 +113,16 @@ prefect worker start --pool default-agent-pool
 
 ## Demo UI
 
-Open `http://localhost:8000/` after starting the API. Four panels:
+Open `http://localhost:8000/` after starting the API. Single panel, two-step
+flow for DE:
 
-1. **Country profile** — ISO2 → block, memberships, standards/accreditation bodies.
-2. **Regulations** — list + filter by document type for a country.
-3. **HS code search** — two-tier classifier (lookup tier ≈ instant; LLM tier
-   can take 30 s+ on the first call).
-4. **Compliance check** — the headline call: country + product → HS code +
-   matching regulations + applicable standards.
+1. Type a product description → ranked HS code candidates from the loaded
+   library (GIN full-text search, no LLM).
+2. Click a candidate → regulations + per-directive notified bodies and
+   harmonised standards in force (pure SQL, no LLM).
+
+See `COMPLIANCE_FLOW.md` for the end-to-end DE query chain, ingestion
+diagrams, and the DB schema (mermaid).
 
 ## Tests
 
@@ -165,4 +167,5 @@ Source-tier adjustments (applied in `kb/score_confidence.py`):
 | 3    | Government ministry / regulator portal    |  0.00      |
 | 4    | Secondary / third-party databases         | −0.10      |
 
-See `ARCHITECTURE.md` for component-level design decisions and data flow.
+See `ARCHITECTURE.md` for component-level design decisions and data flow,
+and `COMPLIANCE_FLOW.md` for the DE end-to-end query chain with diagrams.

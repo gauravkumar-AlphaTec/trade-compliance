@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Trade Compliance — Demo</title>
+<title>Trade Compliance — DE Explorer</title>
 <style>
   :root {
-    --bg: #0f172a;
-    --panel: #1e293b;
-    --border: #334155;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --accent: #38bdf8;
-    --accent-hover: #0ea5e9;
-    --good: #4ade80;
-    --bad: #f87171;
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --border: #e5e5e5;
+    --text: #1f1f1f;
+    --muted: #6b6b6b;
+    --accent: #BF2038;
+    --accent-hover: #9e1a2e;
+    --accent-soft: #f7f7f7;
+    --good: #2e7d32;
+    --bad: #BF2038;
   }
   * { box-sizing: border-box; }
   body {
@@ -22,17 +23,15 @@
     background: var(--bg); color: var(--text);
     line-height: 1.5;
   }
-  h1 { margin: 0 0 8px; font-weight: 600; }
-  .subtitle { color: var(--muted); margin-bottom: 32px; }
+  h1 { margin: 0 0 4px; font-weight: 600; font-size: 22px; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
   .card {
     background: var(--panel); border: 1px solid var(--border);
-    border-radius: 8px; padding: 20px; margin-bottom: 20px;
+    border-radius: 6px; padding: 20px; margin-bottom: 16px;
   }
-  .card h2 { margin: 0 0 4px; font-size: 18px; }
-  .card .desc { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
   input, select {
-    background: var(--bg); color: var(--text);
+    background: var(--panel); color: var(--text);
     border: 1px solid var(--border); border-radius: 4px;
     padding: 8px 10px; font-size: 14px; width: 100%;
     font-family: inherit;
@@ -42,8 +41,8 @@
   .row > * { flex: 1; }
   .row > button { flex: 0 0 auto; }
   button {
-    background: var(--accent); color: var(--bg); border: 0;
-    padding: 8px 16px; border-radius: 4px; font-weight: 600;
+    background: var(--accent); color: #fff; border: 0;
+    padding: 9px 18px; border-radius: 4px; font-weight: 600;
     cursor: pointer; font-size: 14px;
   }
   button:hover { background: var(--accent-hover); }
@@ -51,137 +50,72 @@
   pre {
     background: var(--bg); border: 1px solid var(--border);
     border-radius: 4px; padding: 12px; overflow-x: auto;
-    font-size: 12px; max-height: 400px; overflow-y: auto;
+    font-size: 12px; max-height: 380px; overflow-y: auto;
     margin: 0;
   }
   .result-summary {
-    margin-bottom: 12px; padding: 8px 12px;
-    background: rgba(56, 189, 248, 0.1); border-left: 3px solid var(--accent);
+    margin-bottom: 12px; padding: 10px 14px;
+    background: var(--accent-soft); border-left: 3px solid var(--accent);
     border-radius: 4px; font-size: 13px;
   }
-  .result-summary.error {
-    background: rgba(248, 113, 113, 0.1); border-color: var(--bad);
-  }
-  .result-summary strong { color: var(--accent); }
+  .result-summary.error { background: #fdf0f2; border-color: var(--bad); }
+  .result-summary strong { color: var(--accent-hover); }
   .result-summary.error strong { color: var(--bad); }
   .pill {
     display: inline-block; padding: 2px 8px; border-radius: 12px;
-    background: var(--border); font-size: 11px; margin-right: 4px;
+    background: var(--border); color: var(--text); font-size: 11px; margin: 2px 4px 2px 0;
   }
-  .pill.good { background: rgba(74, 222, 128, 0.2); color: var(--good); }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
   header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
   .health-pill {
     padding: 4px 10px; border-radius: 12px; font-size: 12px;
-    background: rgba(74, 222, 128, 0.2); color: var(--good);
+    background: #eaf4ea; color: var(--good);
   }
-  .health-pill.down { background: rgba(248, 113, 113, 0.2); color: var(--bad); }
+  .health-pill.down { background: #fdf0f2; color: var(--bad); }
+  .candidate {
+    padding: 10px 12px; margin: 6px 0; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 4px;
+    cursor: pointer; font-size: 13px;
+  }
+  .candidate:hover { border-color: var(--accent); background: #fdf0f2; }
+  .candidate strong { color: var(--accent-hover); }
+  section { margin-top: 14px; }
+  section h3 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+  .list-item {
+    padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .list-item:last-child { border-bottom: 0; }
+  .list-item .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
 </style>
 </head>
 <body>
 
 <header>
   <div>
-    <h1>Trade Compliance Demo</h1>
-    <div class="subtitle">Country + product → HS code + regulations</div>
+    <h1>Trade Compliance — DE Explorer</h1>
+    <div class="subtitle">Only tests the data actually loaded: DE regulations → HS codes → notified bodies → harmonised standards.</div>
   </div>
   <div id="health" class="health-pill">checking…</div>
 </header>
 
-<!-- Act 1 — Country -->
 <div class="card">
-  <h2>1. Country profile</h2>
-  <div class="desc">Get full regulatory infrastructure for a country.</div>
   <div class="row">
-    <div>
-      <label>ISO2 code</label>
-      <input id="country-iso2" value="DE">
+    <div style="flex: 3;">
+      <label>Product description</label>
+      <input id="comp-product" value="electric drill" placeholder="e.g. pump, lift, X-ray unit, packaging machine">
     </div>
-    <button onclick="getCountry()">Fetch</button>
-  </div>
-  <div id="country-summary"></div>
-  <pre id="country-out">Click Fetch to load…</pre>
-</div>
-
-<!-- Act 2 — Regulations -->
-<div class="card">
-  <h2>2. Regulations</h2>
-  <div class="desc">List regulations for a country (filter by document type).</div>
-  <div class="row">
-    <div>
+    <div style="flex: 1;">
       <label>Country</label>
-      <input id="reg-country" value="DE">
+      <input id="comp-country" value="DE" readonly>
     </div>
-    <div>
-      <label>Document type (optional)</label>
-      <select id="reg-type">
-        <option value="">— any —</option>
-        <option value="directive">directive</option>
-        <option value="regulation">regulation</option>
-      </select>
-    </div>
-    <button onclick="getRegulations()">Fetch</button>
+    <button onclick="findCandidates()">Find HS codes</button>
   </div>
-  <div id="reg-summary"></div>
-  <pre id="reg-out">Click Fetch to load…</pre>
-</div>
-
-<!-- Act 3 + 4 — Search + Compliance -->
-<div class="grid-2">
-  <div class="card">
-    <h2>3. HS code search</h2>
-    <div class="desc">Lookup tier (instant) → GIN+LLM tier (slow).</div>
-    <div class="row">
-      <div>
-        <label>Product description</label>
-        <input id="hs-product" value="centrifugal pumps" list="examples">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>HS scope</label>
-        <select id="hs-scope">
-          <option value="EU_CN_8">EU_CN_8</option>
-          <option value="WCO_6">WCO_6</option>
-        </select>
-      </div>
-      <button onclick="searchHs()">Classify</button>
-    </div>
-    <datalist id="examples">
-      <option value="centrifugal pumps"></option>
-      <option value="electric motors"></option>
-      <option value="industrial robots"></option>
-      <option value="CNC milling machines"></option>
-      <option value="hot-water boilers"></option>
-      <option value="bicycle"></option>
-    </datalist>
-    <div id="hs-summary"></div>
-    <pre id="hs-out">Click Classify to load…</pre>
-  </div>
-
-  <div class="card">
-    <h2>4. Compliance check</h2>
-    <div class="desc">Headline call: country + product → HS + matching regulations.</div>
-    <div class="row">
-      <div>
-        <label>Product description</label>
-        <input id="comp-product" value="centrifugal pumps">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>Country</label>
-        <input id="comp-country" value="DE">
-      </div>
-      <button onclick="complianceCheck()">Check</button>
-    </div>
-    <div id="comp-summary"></div>
-    <pre id="comp-out">Click Check to load…</pre>
-  </div>
+  <div id="comp-summary"></div>
+  <div id="comp-candidates"></div>
+  <div id="comp-detail"></div>
+  <pre id="comp-out" style="margin-top:12px;">Type a product, hit "Find HS codes", then click a candidate.</pre>
 </div>
 
 <script>
@@ -195,110 +129,133 @@ async function fetchJson(url, opts = {}) {
   return { ok: r.ok, status: r.status, data };
 }
 
-function showResult(summaryEl, outEl, summary, data, isError) {
-  summaryEl.innerHTML = `<div class="result-summary${isError ? ' error' : ''}">${summary}</div>`;
-  outEl.textContent = JSON.stringify(data, null, 2);
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
 async function checkHealth() {
   const el = document.getElementById('health');
   try {
     const { ok, data } = await fetchJson(`${API}/health`);
-    if (ok) {
-      el.textContent = `API ${data.version} ✓`;
-      el.classList.remove('down');
-    } else {
-      el.textContent = 'API down';
-      el.classList.add('down');
-    }
+    if (ok) { el.textContent = `API ${data.version} ✓`; el.classList.remove('down'); }
+    else { el.textContent = 'API down'; el.classList.add('down'); }
   } catch {
-    el.textContent = 'API unreachable';
-    el.classList.add('down');
+    el.textContent = 'API unreachable'; el.classList.add('down');
   }
 }
 
-async function getCountry() {
-  const iso2 = document.getElementById('country-iso2').value.trim().toUpperCase();
-  const summaryEl = document.getElementById('country-summary');
-  const outEl = document.getElementById('country-out');
-  outEl.textContent = 'Loading…';
-  const { ok, data } = await fetchJson(`${API}/countries/${iso2}`);
-  if (!ok) {
-    showResult(summaryEl, outEl, `<strong>Error ${data.detail || 'failed'}</strong>`, data, true);
-    return;
-  }
-  const memberPills = (data.memberships || [])
-    .map(m => `<span class="pill good">${m.org_code}</span>`).join('');
-  showResult(summaryEl, outEl,
-    `<strong>${data.country_name}</strong> (${data.iso2}, ${data.iso3}) — block: ${data.block_code || 'none'} · ${(data.memberships || []).length} memberships<br>${memberPills}`,
-    data, false);
-}
-
-async function getRegulations() {
-  const country = document.getElementById('reg-country').value.trim().toUpperCase();
-  const type = document.getElementById('reg-type').value;
-  const summaryEl = document.getElementById('reg-summary');
-  const outEl = document.getElementById('reg-out');
-  outEl.textContent = 'Loading…';
-  let url = `${API}/regulations?country=${country}`;
-  if (type) url += `&document_type=${type}`;
-  const { ok, data } = await fetchJson(url);
-  if (!ok) {
-    showResult(summaryEl, outEl, `<strong>Error</strong>`, data, true);
-    return;
-  }
-  showResult(summaryEl, outEl,
-    `<strong>${data.total}</strong> regulations for ${country}${type ? ' · type=' + type : ''}`,
-    data, false);
-}
-
-async function searchHs() {
-  const product = document.getElementById('hs-product').value.trim();
-  const scope = document.getElementById('hs-scope').value;
-  const summaryEl = document.getElementById('hs-summary');
-  const outEl = document.getElementById('hs-out');
-  outEl.textContent = 'Classifying… (LLM fallback may take 30+s)';
-  const t0 = performance.now();
-  const { ok, data } = await fetchJson(`${API}/hs-codes/search`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ product_description: product, country_scope: scope }),
-  });
-  const ms = Math.round(performance.now() - t0);
-  if (!ok) {
-    showResult(summaryEl, outEl, `<strong>Error</strong> (${ms}ms)`, data, true);
-    return;
-  }
-  const c = data.classification || {};
-  const tier = ms < 500 ? 'lookup tier' : 'LLM tier';
-  showResult(summaryEl, outEl,
-    `<strong>${c.code || '—'}</strong> (${c.code_type || ''}) · confidence ${c.confidence ?? '—'} · ${tier} · ${ms}ms`,
-    data, false);
-}
-
-async function complianceCheck() {
+async function findCandidates() {
   const product = document.getElementById('comp-product').value.trim();
   const country = document.getElementById('comp-country').value.trim().toUpperCase();
   const summaryEl = document.getElementById('comp-summary');
+  const candEl = document.getElementById('comp-candidates');
+  const detailEl = document.getElementById('comp-detail');
   const outEl = document.getElementById('comp-out');
-  outEl.textContent = 'Checking…';
+  candEl.innerHTML = ''; detailEl.innerHTML = '';
+  outEl.textContent = 'Searching…';
   const t0 = performance.now();
-  const { ok, data } = await fetchJson(`${API}/hs-codes/compliance-check`, {
+  const { ok, data } = await fetchJson(`${API}/hs-codes/candidates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ product_description: product, country_code: country }),
+    body: JSON.stringify({ country_code: country, product_description: product, limit: 10 }),
   });
   const ms = Math.round(performance.now() - t0);
   if (!ok) {
-    showResult(summaryEl, outEl, `<strong>Error</strong> (${ms}ms)`, data, true);
+    summaryEl.innerHTML = `<div class="result-summary error"><strong>Error</strong> (${ms}ms)</div>`;
+    outEl.textContent = JSON.stringify(data, null, 2);
+    return;
+  }
+  const cs = data.candidates || [];
+  if (cs.length === 0) {
+    summaryEl.innerHTML = `<div class="result-summary error"><strong>No HS code candidates</strong> for "${escapeHtml(product)}". Try "pump", "valve", "lift", "motor".</div>`;
+    outEl.textContent = JSON.stringify(data, null, 2);
+    return;
+  }
+  summaryEl.innerHTML = `<div class="result-summary"><strong>${cs.length} HS candidates</strong> for "${escapeHtml(product)}" (${country}, scope ${data.country_scope}, ${ms}ms). Click one.</div>`;
+  candEl.innerHTML = cs.map(c => `
+    <div class="candidate" onclick="pickCandidate('${c.code}', '${country}')">
+      <div><strong>${escapeHtml(c.code)}</strong> <span class="pill">${escapeHtml(c.code_type || '')}</span></div>
+      <div style="color:var(--muted); margin-top:2px;">${escapeHtml(c.description || '')}</div>
+    </div>`).join('');
+  outEl.textContent = JSON.stringify(data, null, 2);
+}
+
+async function pickCandidate(hsCode, country) {
+  const summaryEl = document.getElementById('comp-summary');
+  const detailEl = document.getElementById('comp-detail');
+  const outEl = document.getElementById('comp-out');
+  detailEl.innerHTML = '';
+  outEl.textContent = `Loading compliance for HS ${hsCode}…`;
+  const t0 = performance.now();
+  const { ok, data } = await fetchJson(`${API}/hs-codes/compliance-by-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ country_code: country, hs_code: hsCode }),
+  });
+  const ms = Math.round(performance.now() - t0);
+  if (!ok) {
+    summaryEl.innerHTML = `<div class="result-summary error"><strong>Error</strong> (${ms}ms)</div>`;
+    outEl.textContent = JSON.stringify(data, null, 2);
     return;
   }
   const hs = data.hs_classification || {};
   const regs = data.regulations || [];
-  const regsHtml = regs.map(r => `<span class="pill">${(r.title || '').split('—')[0].trim()}</span>`).join('');
-  showResult(summaryEl, outEl,
-    `<strong>${hs.code || '—'}</strong> → ${regs.length} regulation(s) · ${ms}ms<br>${regsHtml}`,
-    data, false);
+  const nbs = data.notified_bodies || [];
+  const stds = data.harmonised_standards || [];
+  const directives = Array.from(new Set([
+    ...nbs.map(n => n.directive_ref),
+    ...stds.map(s => s.directive_ref),
+  ].filter(Boolean))).sort();
+
+  summaryEl.innerHTML = `<div class="result-summary">
+    <strong>HS ${escapeHtml(hs.code)}</strong> — ${escapeHtml(hs.description || '')}<br>
+    ${regs.length} regulation(s) · ${nbs.length} notified bodies · ${stds.length} harmonised standards · ${ms}ms
+  </div>`;
+
+  // Regulations
+  let html = '';
+  if (regs.length) {
+    html += `<section><h3>Regulations (${regs.length})</h3>` +
+      regs.map(r => `<div class="list-item"><strong>${escapeHtml(r.title)}</strong>
+        <div class="meta">${escapeHtml(r.document_type || '')} · ${escapeHtml(r.authority || '')} · ${escapeHtml(r.status || '')}</div>
+      </div>`).join('') + `</section>`;
+  } else {
+    html += `<section><h3>Regulations</h3><div class="list-item" style="color:var(--muted)">No regulations matched this HS code.</div></section>`;
+  }
+
+  // Directive breakdown
+  if (directives.length) {
+    const nbByDir = nbs.reduce((a, b) => (a[b.directive_ref] = (a[b.directive_ref] || 0) + 1, a), {});
+    const stdByDir = stds.reduce((a, s) => (a[s.directive_ref] = (a[s.directive_ref] || 0) + 1, a), {});
+    html += `<section><h3>Per-directive breakdown</h3>` +
+      directives.map(d => `<div class="list-item">
+        <strong>${escapeHtml(d)}</strong>
+        <div class="meta">${nbByDir[d] || 0} notified bodies · ${stdByDir[d] || 0} harmonised standards</div>
+      </div>`).join('') + `</section>`;
+  }
+
+  // Notified bodies (first 10)
+  if (nbs.length) {
+    const shown = nbs.slice(0, 10);
+    html += `<section><h3>Notified bodies (showing ${shown.length} of ${nbs.length})</h3>` +
+      shown.map(nb => `<div class="list-item">
+        <strong>NB ${escapeHtml(nb.nb_number)}</strong> — ${escapeHtml(nb.name)}
+        <div class="meta">${escapeHtml(nb.city || '')} · ${escapeHtml(nb.directive_ref)} · ${escapeHtml(nb.notifying_authority || '')}</div>
+      </div>`).join('') + `</section>`;
+  }
+
+  // Harmonised standards (first 10)
+  if (stds.length) {
+    const shown = stds.slice(0, 10);
+    html += `<section><h3>Harmonised standards (showing ${shown.length} of ${stds.length})</h3>` +
+      shown.map(s => `<div class="list-item">
+        <strong>${escapeHtml(s.standard_code)}</strong>
+        <div class="meta">${escapeHtml(s.title || '')} · ${escapeHtml(s.eso || '')} · ${escapeHtml(s.directive_ref)}</div>
+      </div>`).join('') + `</section>`;
+  }
+
+  detailEl.innerHTML = html;
+  outEl.textContent = JSON.stringify(data, null, 2);
 }
 
 checkHealth();

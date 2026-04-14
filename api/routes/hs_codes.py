@@ -7,6 +7,9 @@ from api.models import (
     HsCodeSearchRequest,
     HsCodeSearchResponse,
     HsCodeResult,
+    CandidatesRequest,
+    CandidatesResponse,
+    ComplianceByCodeRequest,
     ComplianceCheckRequest,
     ComplianceCheckResponse,
     CountryContext,
@@ -283,6 +286,155 @@ def compliance_check(
         hs_classification=hs_classification,
         regulations=regulations,
         standards=standards,
+        notified_bodies=notified_bodies,
+        harmonised_standards=harmonised_standards,
+    )
+
+
+@router.post("/candidates", response_model=CandidatesResponse)
+def candidates(body: CandidatesRequest, conn=Depends(get_db)):
+    """Return ranked HS code candidates for a product description.
+
+    No LLM. Pure GIN full-text search against kb_hs_codes filtered by the
+    country's HS scope (EU_CN_8 / US_HTS_10 / WCO_6). Lets the UI surface
+    the candidate list so a human can pick instead of waiting for the LLM.
+    """
+    description = body.product_description.strip()
+    country_code = body.country_code.strip().upper()
+    if not description or not country_code:
+        raise HTTPException(status_code=400, detail="country_code and product_description are required")
+
+    country_scope = get_country_scope(country_code, conn)
+    rows = get_candidates_by_keyword(description, country_scope, conn, limit=body.limit)
+    items = [
+        HsCodeResult(
+            code=r["code"],
+            code_type=r.get("code_type"),
+            description=r.get("description"),
+        )
+        for r in rows
+    ]
+    return CandidatesResponse(country_code=country_code, country_scope=country_scope, candidates=items)
+
+
+@router.post("/compliance-by-code", response_model=ComplianceCheckResponse)
+def compliance_by_code(body: ComplianceByCodeRequest, conn=Depends(get_db)):
+    """Run the compliance pipeline for a known HS code (skip classification).
+
+    Same response shape as /compliance-check but driven by an HS code the
+    caller already picked from /candidates.
+    """
+    country_code = body.country_code.strip().upper()
+    hs_code_value = body.hs_code.strip()
+    if not country_code or not hs_code_value:
+        raise HTTPException(status_code=400, detail="country_code and hs_code are required")
+
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            SELECT cp.iso2, cp.country_name,
+                   eb.code AS block_code, eb.name AS block_name
+            FROM kb_country_profiles cp
+            LEFT JOIN kb_economic_blocks eb ON cp.block_id = eb.id
+            WHERE cp.iso2 = %s
+            """,
+            (country_code,),
+        )
+        country_row = cur.fetchone()
+        if not country_row:
+            raise HTTPException(status_code=404, detail="Country not found")
+
+        cur.execute(
+            """
+            SELECT org_code FROM kb_memberships
+            WHERE country_id = (SELECT id FROM kb_country_profiles WHERE iso2 = %s)
+              AND is_member = TRUE
+            """,
+            (country_code,),
+        )
+        memberships = [r["org_code"] for r in cur.fetchall()]
+
+        country_ctx = CountryContext(
+            iso2=country_row["iso2"],
+            country_name=country_row["country_name"],
+            block_code=country_row.get("block_code"),
+            block_name=country_row.get("block_name"),
+            memberships=memberships,
+        )
+
+        cur.execute(
+            """
+            SELECT DISTINCT r.id, r.title, r.document_type, r.authority,
+                   r.country, r.effective_date, r.status, r.directive_ref
+            FROM regulations r
+            JOIN regulation_hs_codes rhc ON r.id = rhc.regulation_id
+            JOIN kb_hs_codes hc ON rhc.hs_code_id = hc.id
+            WHERE r.country = %s
+              AND hc.code = LEFT(%s, LENGTH(hc.code))
+            ORDER BY r.effective_date DESC NULLS LAST
+            LIMIT 20
+            """,
+            (country_code, hs_code_value),
+        )
+        reg_rows = cur.fetchall()
+
+        directive_refs = sorted({r["directive_ref"] for r in reg_rows if r.get("directive_ref")})
+        notified_body_rows = []
+        harmonised_rows = []
+        if directive_refs:
+            cur.execute(
+                """
+                SELECT nb.nb_number, nb.name, nb.city, nb.email, nb.website,
+                       nbd.directive_ref, nbd.notifying_authority, nbd.last_approval_date
+                FROM kb_notified_body_directives nbd
+                JOIN kb_notified_bodies nb ON nbd.nb_id = nb.id
+                JOIN kb_country_profiles cp ON nb.country_id = cp.id
+                WHERE cp.iso2 = %s AND nbd.directive_ref = ANY(%s) AND nb.status = 'active'
+                ORDER BY nbd.directive_ref, nb.nb_number
+                """,
+                (country_code, directive_refs),
+            )
+            notified_body_rows = cur.fetchall()
+            cur.execute(
+                """
+                SELECT standard_code, title, eso, directive_ref, in_force_from
+                FROM kb_harmonised_standards
+                WHERE directive_ref = ANY(%s) AND withdrawn_on IS NULL
+                ORDER BY directive_ref, standard_code
+                """,
+                (directive_refs,),
+            )
+            harmonised_rows = cur.fetchall()
+
+        # HS code metadata for echoing in the response.
+        cur.execute(
+            "SELECT code, code_type, description FROM kb_hs_codes WHERE code = %s LIMIT 1",
+            (hs_code_value,),
+        )
+        hs_meta = cur.fetchone()
+    finally:
+        cur.close()
+
+    hs_classification = HsCodeResult(
+        code=hs_code_value,
+        code_type=(hs_meta or {}).get("code_type"),
+        description=(hs_meta or {}).get("description"),
+        confidence=1.0,
+        reasoning="user-selected from candidates",
+    )
+    regulations = [
+        RegulationSummary(**{k: v for k, v in r.items() if k != "directive_ref"})
+        for r in reg_rows
+    ]
+    notified_bodies = [NotifiedBodySummary(**r) for r in notified_body_rows]
+    harmonised_standards = [HarmonisedStandardSummary(**r) for r in harmonised_rows]
+
+    return ComplianceCheckResponse(
+        country_context=country_ctx,
+        hs_classification=hs_classification,
+        regulations=regulations,
+        standards=[],
         notified_bodies=notified_bodies,
         harmonised_standards=harmonised_standards,
     )
