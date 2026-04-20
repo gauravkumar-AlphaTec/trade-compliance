@@ -184,6 +184,74 @@ class LLMClient:
         return result
 
     # ------------------------------------------------------------------
+    # Directive scope → HS headings
+    # ------------------------------------------------------------------
+    def map_directive_to_hs_headings(
+        self,
+        directive_ref: str,
+        scope_text: str,
+        definitions_text: str = "",
+    ) -> dict:
+        """Given a directive's scope and definitions text, return HS headings.
+
+        Returns dict with keys:
+            hs_headings: list of 4-digit HS heading strings,
+            reasoning: explanation of the mapping,
+            confidence: float 0.0-1.0
+        """
+        combined = scope_text
+        if definitions_text:
+            combined += "\n\nDefinitions:\n" + definitions_text
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an EU trade-compliance expert. Given the scope and "
+                    "definitions text of an EU directive, identify the EU Combined "
+                    "Nomenclature (CN) 4-digit headings of products that fall "
+                    "under this directive.\n\n"
+                    "Rules:\n"
+                    "- Return ONLY 4-digit HS/CN heading codes (e.g. 8501, 9503)\n"
+                    "- Include headings for products IN scope\n"
+                    "- Do NOT include headings for products explicitly EXCLUDED\n"
+                    "- Be specific: prefer 4-digit headings over 2-digit chapters\n"
+                    "- Return ONLY valid JSON"
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Directive: {directive_ref}\n\n"
+                    f"Scope and definitions text:\n{combined[:4000]}\n\n"
+                    "Return JSON with keys: hs_headings (list of 4-digit strings), "
+                    "reasoning (string), confidence (float 0.0-1.0)."
+                ),
+            },
+        ]
+
+        last_error: Exception | None = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            raw = self._call(messages)
+            try:
+                result = _extract_json(raw)
+                headings = result.get("hs_headings", [])
+                result["hs_headings"] = [
+                    str(h).strip()[:4] for h in headings if str(h).strip()
+                ]
+                result["confidence"] = round(
+                    result.get("confidence", 0.5) * 0.85, 3
+                )
+                return result
+            except json.JSONDecodeError as exc:
+                last_error = exc
+                logger.debug(
+                    "JSON parse failed (attempt %d/%d): %s",
+                    attempt, MAX_RETRIES, exc,
+                )
+        raise last_error  # type: ignore[misc]
+
+    # ------------------------------------------------------------------
     # Health check
     # ------------------------------------------------------------------
     def health_check(self) -> bool:
