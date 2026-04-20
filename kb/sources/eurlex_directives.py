@@ -212,4 +212,97 @@ NLF_DIRECTIVES: dict[str, dict] = {
         "directive_ref": "2014/90/EU",
         "effective_date": "2016-09-18",
     },
+    # --- NANDO-referenced directives not in the first batch ---
+    "32011R0305": {
+        "short": "Construction Products",
+        "directive_ref": "305/2011",
+        "effective_date": "2013-07-01",
+    },
+    "32023R1230": {
+        "short": "Machinery Regulation (new)",
+        "directive_ref": "2023/1230",
+        "effective_date": "2027-01-20",
+    },
+    "32014L0031": {
+        "short": "NAWI",
+        "directive_ref": "2014/31/EU",
+        "effective_date": "2016-04-20",
+    },
+    "32010L0035": {
+        "short": "Transportable Pressure Equipment",
+        "directive_ref": "2010/35/EU",
+        "effective_date": "2011-06-21",
+    },
+    "32000L0014": {
+        "short": "Outdoor Noise",
+        "directive_ref": "2000/14/EC",
+        "effective_date": "2002-01-03",
+    },
+    "32016L0797": {
+        "short": "Railway Interoperability",
+        "directive_ref": "2016/797",
+        "effective_date": "2016-06-15",
+    },
+    "32017R0746": {
+        "short": "IVDR",
+        "directive_ref": "2017/746",
+        "effective_date": "2022-05-26",
+    },
+    "32016R0424": {
+        "short": "Cableway Installations",
+        "directive_ref": "2016/424",
+        "effective_date": "2018-04-21",
+    },
+    "32013L0029": {
+        "short": "Pyrotechnic Articles",
+        "directive_ref": "2013/29/EU",
+        "effective_date": "2015-07-01",
+    },
+    "32014L0028": {
+        "short": "Explosives for Civil Use",
+        "directive_ref": "2014/28/EU",
+        "effective_date": "2016-04-20",
+    },
+    "32019R0945": {
+        "short": "Drones (UAS)",
+        "directive_ref": "2019/945",
+        "effective_date": "2019-07-01",
+    },
+    # --- Legacy directives still active in NANDO ---
+    "31993L0042": {
+        "short": "MDD (legacy)",
+        "directive_ref": "93/42/EEC",
+        "effective_date": "1998-06-14",
+    },
+    "31990L0385": {
+        "short": "AIMDD (legacy)",
+        "directive_ref": "90/385/EEC",
+        "effective_date": "1995-01-01",
+    },
+    "31998L0079": {
+        "short": "IVDD (legacy)",
+        "directive_ref": "98/79/EC",
+        "effective_date": "2003-12-07",
+    },
+    "31992L0042": {
+        "short": "Boiler Efficiency (legacy)",
+        "directive_ref": "92/42/EEC",
+        "effective_date": "1994-01-01",
+    },
+    # --- Additional significant EU product directives ---
+    "32009L0125": {
+        "short": "Ecodesign (ErP)",
+        "directive_ref": "2009/125/EC",
+        "effective_date": "2009-11-20",
+    },
+    "32010L0030": {
+        "short": "Energy Labelling",
+        "directive_ref": "2010/30/EU",
+        "effective_date": "2010-06-18",
+    },
+    "32014L0094": {
+        "short": "Alt Fuels Infrastructure",
+        "directive_ref": "2014/94/EU",
+        "effective_date": "2016-11-18",
+    },
 }
