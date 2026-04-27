@@ -85,6 +85,31 @@ PREFECT_API_URL=http://localhost:4200/api
 
 Never hardcode host URLs anywhere in code — always read from the environment.
 
+## Quickstart — run the app
+
+Assumes Postgres is already running and the schema is initialised.
+
+```bash
+# Set env (or source .env)
+export DATABASE_URL=postgresql://postgres:<password>@localhost:5432/trade_compliance
+export OLLAMA_HOST=http://localhost:11434
+
+# Start the API
+uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Then open:
+
+- `http://127.0.0.1:8000/`        demo UI
+- `http://127.0.0.1:8000/docs`    OpenAPI
+- `http://127.0.0.1:8000/health`  liveness
+
+Ollama is only needed for endpoints that classify HS codes (`/hs-codes/search`,
+`/hs-codes/compliance-check`). Read-only endpoints work without it.
+
+For first-time setup (Postgres install, schema init, seed, Ollama), see the
+full sequence below.
+
 ## Running locally (no Docker)
 
 ```bash
